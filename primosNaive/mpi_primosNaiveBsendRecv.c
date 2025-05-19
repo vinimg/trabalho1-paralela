@@ -5,7 +5,6 @@
 
 int primo(long int n) {
     int i;
-
     for (i = 3; i < (int)(sqrt(n) + 1); i += 2) {
         if (n % i == 0)
             return 0;
@@ -21,8 +20,6 @@ int main(int argc, char *argv[]) {
     int meu_ranque, num_procs, inicio, salto;
     int etiq = 0;
     int raiz = 0;
-    // MPI_Request pedido_envia;
-    MPI_Request pedido_recebe;
     MPI_Status estado;
     void* buffer;
     int tamanho_buffer;
@@ -54,14 +51,10 @@ int main(int argc, char *argv[]) {
     }
 
     if (meu_ranque != 0) {
-        // Envia de forma não bloqueante usando BSend
         MPI_Bsend(&cont, 1, MPI_INT, raiz, etiq, MPI_COMM_WORLD);
     } else {
         for (int origem = 1; origem < num_procs; origem++) {
-            // Recebe de forma não bloqueante
-            MPI_Irecv(&valor, 1, MPI_INT, origem, etiq, MPI_COMM_WORLD, &pedido_recebe);
-            // Espera o recebimento completar
-            MPI_Wait(&pedido_recebe, &estado);
+            MPI_Recv(&valor, 1, MPI_INT, origem, etiq, MPI_COMM_WORLD, &estado);
             total += valor;
         }
     }
@@ -75,10 +68,10 @@ int main(int argc, char *argv[]) {
         printf("Tempo de execucao: %1.3f \n", t_final - t_inicial);
     }
 
-    // Desanexa o buffer antes de finalizar
     MPI_Buffer_detach(&buffer, &tamanho_buffer);
     free(buffer);
     
     MPI_Finalize();
     return 0;
 }
+// Compile: mpicc -o mpi_primosNaiveBsendRecv mpi_primosNaiveBsendRecv.c -lm
